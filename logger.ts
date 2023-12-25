@@ -1,6 +1,32 @@
 import log4js from "log4js"; 
 
 log4js.configure({
+  appenders: {
+    out: {
+      type: "stdout",
+      layout: {
+        type: "pattern",
+        pattern: "%d %p %f:%l %m%n",
+      },
+    },
+    everything: {
+      type: "file",
+      filename: "./logs/logs.log",
+      maxLogSize: 1024000,
+      layout: {
+        type: "pattern",
+        pattern: "%d %p %f:%l %m%n",
+      },
+    },
+  },
+  categories: {
+    default: { appenders: ["everything", "out"], level: "debug", enableCallStack: true },
+  },
+});
+const mainLogger = log4js.getLogger();
+
+const getUserLogger = (subdomain: string) => {
+  log4js.configure({
     appenders: {
       out: {
         type: "stdout",
@@ -11,7 +37,7 @@ log4js.configure({
       },
       everything: {
         type: "file",
-        filename: "./logs/logs.log",
+        filename: `./logs/${subdomain}/logs.log`,
         maxLogSize: 1024000,
         layout: {
           type: "pattern",
@@ -23,35 +49,9 @@ log4js.configure({
       default: { appenders: ["everything", "out"], level: "debug", enableCallStack: true },
     },
   });
-  const mainLogger = log4js.getLogger();
-  
-  const getUserLogger = (subdomain: string) => {
-    log4js.configure({
-      appenders: {
-        out: {
-          type: "stdout",
-          layout: {
-            type: "pattern",
-            pattern: "%d %p %f:%l %m%n",
-          },
-        },
-        everything: {
-          type: "file",
-          filename: `./logs/${subdomain}/logs.log`,
-          maxLogSize: 1024000,
-          layout: {
-            type: "pattern",
-            pattern: "%d %p %f:%l %m%n",
-          },
-        },
-      },
-      categories: {
-        default: { appenders: ["everything", "out"], level: "debug", enableCallStack: true },
-      },
-    });
-  
-    return log4js.getLogger();
-  }
+
+  return log4js.getLogger();
+}
   
  export {
     getUserLogger, 

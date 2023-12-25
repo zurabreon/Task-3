@@ -1,5 +1,4 @@
 import moment from "moment";
-import fs from "fs";
 import { Customfield } from "./types/customField/customField";
 
 const getTodayDateTime = ():string => moment().format("YYYY-MM-DD HH:MM:ss");
