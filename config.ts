@@ -1,0 +1,15 @@
+const config = {
+    // данные для api amocrm
+    CLIENT_ID: "e7b44b96-1d16-4437-b7ad-76dfa5080729",
+    CLIENT_SECRET: "mzRQyKozc4aeNfiNlzLYxiEgDnviSRpoTphYdW6VhuHhfR4LKyNv8c3NN5Jn5inf",
+    //AUTH_CODE живет 20 минут, при перезапуске скрипта нужно брать новый
+    AUTH_CODE: "def5020065cb85bea1137bea79c281d1622f5beb5ee996d02d12c27454665aa32313790d1dd3172d734eb0878a87dc4e7f95c56d3ac178872973465d9c91afce343c2773005d273bc234ac87ab8199ecefc03c58b9fb2543ae3bdd36efb889d80bfb6f35bba04c871275b37d02902a14ee7a3c20ce787280b5d533281509daad61a30f3fe425e24c4384008cfada85657d29f5ee59abfe09d8be8dda8df591851d658630ece5a351b3136fdc9b82e7ba3fbbfb320eea03c30e5ab00a7eeade36f5e6e9fef03de49d153e20889d0f88ba7a2eae507893e55b635310e59544724b69ab1f0617cf555db0fcb341a62b44a2928be5dd37b0fc06643b756ec4a5badd3b8928d84d66fb415426978be4dcb6c6862a2b8f0a528fa07156e63597d5bd5ec8014acef26a0a35fa14e3aebe5b8e7a19d719eae0052650b2e144df92c08ec2d7b9c4cbb254b39dd04b40fa30ac0b0ae6736920094291b0cb7d4c8e08637edf28f0ba531dc1283cb768c52e856b355b3c2afd7ebe9df3369db1962df771d0186e5bf4347bc15261edc9d2e32baff2851a3dce0b0e65a4edbb4972a73d9739af110da97ce825d82a18ceac1844476f053c5c4e68df060288731d1c0b3f293822379f1cbbd26f96a03ca6eecd6b420a7df1baac726fa9f267a9971bd6a88f9648ee152ad3c65930e2a93a3c5c41ae2f3bf0264790fc8f3d15",
+    REDIRECT_URI: "https://f67a-77-95-90-50.ngrok-free.app",
+    SUB_DOMAIN: "nicestrogonov",
+    // конфигурация сервера
+    PORT: '2000',
+    BOT_TOKEN: ""
+
+}
+
+export default config;
