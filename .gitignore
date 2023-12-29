@@ -1,0 +1,7 @@
+*.log*
+node_modules
+ngrok.exe
+amo_token.json
+dist
+authclients
+README.md
