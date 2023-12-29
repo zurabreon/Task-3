@@ -7,6 +7,7 @@ import {
     getUserLogger
 } from "./logger";
 import log4js from "log4js"
+import { jwtDecode } from "jwt-decode";
 
 
 axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
@@ -55,20 +56,6 @@ class AuthSync extends Api {
         };
     };
 
-    async getAccountId() {
-        const getAccountId = (() => {
-            return axios.get<any>(`https://${this.SUB_DOMAIN}.amocrm.ru/api/v4/account`, {
-                headers: {
-                    Authorization: `Bearer ${this.ACCESS_TOKEN}`,
-                },
-            }).then((res) => res.data.id);
-        });
-    
-        const accountId = await getAccountId();
-    
-        return accountId;
-    }
-
     async requestAccessToken() {
         return axios
             .post(`${this.ROOT_PATH}/oauth2/access_token`, {
@@ -104,7 +91,8 @@ class AuthSync extends Api {
             const token = await this.requestAccessToken();
             this.ACCESS_TOKEN = token.access_token;
             this.REFRESH_TOKEN = token.refresh_token;
-            this.AMO_TOKEN_PATH = `./authclients/${await this.getAccountId()}_amo_token.json`
+            this.ACCOUNT_ID = String(jwtDecode(token.access_token).account_id);
+            this.AMO_TOKEN_PATH = `./authclients/${this.ACCOUNT_ID}_amo_token.json`
             fs.writeFileSync(this.AMO_TOKEN_PATH, JSON.stringify(token));
             return Promise.resolve(token);
         }
@@ -124,7 +112,8 @@ class AuthSync extends Api {
                 const token = res.data;
                 this.ACCESS_TOKEN = token.access_token;
                 this.REFRESH_TOKEN = token.refresh_token;
-                this.AMO_TOKEN_PATH = `./authclients/${await this.getAccountId()}_amo_token.json`
+                this.ACCOUNT_ID = String(jwtDecode(token.access_token).account_id);
+                this.AMO_TOKEN_PATH = `./authclients/${this.ACCOUNT_ID}_amo_token.json`
                 fs.writeFileSync(this.AMO_TOKEN_PATH, JSON.stringify(token));
                 return token;
             })
@@ -134,16 +123,15 @@ class AuthSync extends Api {
             });
     };
 
-    //для проверки работоспособности токена
-    getContact = this.authChecker((id) => {
-        return axios
-            .get(`${this.ROOT_PATH}/api/v4/contacts/${id}`, {
-                headers: {
-                    Authorization: `Bearer ${this.ACCESS_TOKEN}`,
-                },
-            })
-            .then((res) => res.data);
-    });
+    async deleteToken (accountId: string){
+
+        fs.unlink(`./authclients/${accountId}_amo_token.json`, err => {
+            if(err) {
+                throw err;
+            }
+            this.logger.debug('Token deleted successfully');
+        });
+    }
 }
 
 export default AuthSync;
