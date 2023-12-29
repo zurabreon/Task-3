@@ -134,6 +134,7 @@ class AuthSync extends Api {
             });
     };
 
+    //для проверки работоспособности токена
     getContact = this.authChecker((id) => {
         return axios
             .get(`${this.ROOT_PATH}/api/v4/contacts/${id}`, {

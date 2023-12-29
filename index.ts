@@ -4,7 +4,6 @@ import  AuthSync  from "./authSync";
 import { mainLogger } from "./logger"
 import config from "./config";
 import fs from "fs";
-import { subtle } from "crypto";
 
 const app = express();
 
