@@ -6,6 +6,7 @@ abstract class Api {
     abstract REFRESH_TOKEN: string;
     abstract SUB_DOMAIN: string;
     abstract CODE: string;
+    abstract ACCOUNT_ID: string;
 }
 
 

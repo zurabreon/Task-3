@@ -21,10 +21,12 @@ class AmoCRM extends Api {
     SUB_DOMAIN: string;
     logger: log4js.Logger;
     CODE: string;
+    ACCOUNT_ID: string;
 
     constructor(subDomain: string, CODE: string) {
         super();
         this.SUB_DOMAIN = subDomain;
+        this.ACCOUNT_ID = "";
         this.AMO_TOKEN_PATH = `./authclients/${this.SUB_DOMAIN}_amo_token.json`;
         this.LIMIT = 200;
         this.ROOT_PATH = `https://${this.SUB_DOMAIN}.amocrm.ru`

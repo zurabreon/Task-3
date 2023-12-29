@@ -21,11 +21,13 @@ class AuthSync extends Api {
     SUB_DOMAIN: string;
     logger: log4js.Logger;
     CODE: string;
+    ACCOUNT_ID: string;
 
-    constructor(subDomain: string, code: string) {
+    constructor(subDomain: string, code: string, account_id: string) {
         super();
         this.SUB_DOMAIN = subDomain;
-        this.AMO_TOKEN_PATH = ``;
+        this.ACCOUNT_ID = account_id;
+        this.AMO_TOKEN_PATH = `./authclients/${this.ACCOUNT_ID}_amo_token.json`;
         this.LIMIT = 200;
         this.ROOT_PATH = `https://${this.SUB_DOMAIN}.amocrm.ru`
         this.ACCESS_TOKEN = "";
@@ -131,6 +133,16 @@ class AuthSync extends Api {
                 this.logger.error(err.response.data);
             });
     };
+
+    getContact = this.authChecker((id) => {
+        return axios
+            .get(`${this.ROOT_PATH}/api/v4/contacts/${id}`, {
+                headers: {
+                    Authorization: `Bearer ${this.ACCESS_TOKEN}`,
+                },
+            })
+            .then((res) => res.data);
+    });
 }
 
 export default AuthSync;
