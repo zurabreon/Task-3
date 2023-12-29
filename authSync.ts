@@ -104,7 +104,7 @@ class AuthSync extends Api {
                 client_id: config.CLIENT_ID,
                 client_secret: config.CLIENT_SECRET,
                 grant_type: "refresh_token",
-                REFRESH_TOKEN: this.REFRESH_TOKEN,
+                refresh_token: this.REFRESH_TOKEN,
                 redirect_uri: config.REDIRECT_URI,
             })
             .then(async (res) => {
@@ -123,9 +123,9 @@ class AuthSync extends Api {
             });
     };
 
-    async deleteToken (accountId: string){
+    async deleteToken (){
 
-        fs.unlink(`./authclients/${accountId}_amo_token.json`, err => {
+        fs.unlink(`./authclients/${this.ACCOUNT_ID}_amo_token.json`, err => {
             if(err) {
                 throw err;
             }

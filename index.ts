@@ -34,9 +34,9 @@ app.get('/logout', async (req: Request<unknown, unknown, unknown, RequestQuery>,
     mainLogger.debug('LOGOUT');
     
     const accountId = req.query.account_id; 
-    const api = new AuthSync('', '', '');
+    const api = new AuthSync('', '', accountId);
 
-    api.deleteToken(accountId);
+    api.deleteToken();
 
     res.status(200).send({message: "ok"});
 });
