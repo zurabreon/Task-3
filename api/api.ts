@@ -1,5 +1,4 @@
 abstract class Api { 
-    abstract AMO_TOKEN_PATH: string;
     abstract LIMIT: number;
     abstract ROOT_PATH: string;
     abstract ACCESS_TOKEN: string;

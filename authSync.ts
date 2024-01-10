@@ -1,6 +1,5 @@
 import axios from "axios";
 import config from "./config";
-import fs from "fs";
 import axiosRetry from "axios-retry";
 import Api from "./api/api";
 import {
@@ -8,13 +7,18 @@ import {
 } from "./logger";
 import log4js from "log4js"
 import { jwtDecode } from "jwt-decode";
-
+import { MongoClient } from "mongodb";
 
 axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 
+const DB_NAME = 'account-collection';
+const ACCOUNT_COLLECTION = 'accounts';
+
+const db = 'mongodb+srv://zguysanovreon:Qwerty321123@cluster0.usmz3it.mongodb.net/';
+const mongoDBClient = new MongoClient(db);
+
 
 class AuthSync extends Api {
-    AMO_TOKEN_PATH: string;
     LIMIT: number;
     ROOT_PATH: string;
     ACCESS_TOKEN: string;
@@ -28,7 +32,6 @@ class AuthSync extends Api {
         super();
         this.SUB_DOMAIN = subDomain;
         this.ACCOUNT_ID = account_id;
-        this.AMO_TOKEN_PATH = `./authclients/${this.ACCOUNT_ID}_amo_token.json`;
         this.LIMIT = 200;
         this.ROOT_PATH = `https://${this.SUB_DOMAIN}.amocrm.ru`
         this.ACCESS_TOKEN = "";
@@ -76,24 +79,64 @@ class AuthSync extends Api {
     };
 
     async getAccessToken() {
+
+        await mongoDBClient.connect();
+
         if (this.ACCESS_TOKEN) {
             return Promise.resolve(this.ACCESS_TOKEN);
         }
         try {
-            const content = fs.readFileSync(this.AMO_TOKEN_PATH).toString();
-            const token = JSON.parse(content);
+
+            const account = String(await mongoDBClient.db(DB_NAME).collection(ACCOUNT_COLLECTION).findOne({account_id: this.ACCOUNT_ID}));
+            const token = JSON.parse(account);
             this.ACCESS_TOKEN = token.access_token;
             this.REFRESH_TOKEN = token.refresh_token;
             return Promise.resolve(token);
+
         } catch (error) {
-            this.logger.error(`Error read file ${this.AMO_TOKEN_PATH}`, error);
+
             this.logger.debug('Trying get token again');
             const token = await this.requestAccessToken();
             this.ACCESS_TOKEN = token.access_token;
             this.REFRESH_TOKEN = token.refresh_token;
             this.ACCOUNT_ID = String(jwtDecode(token.access_token).account_id);
-            this.AMO_TOKEN_PATH = `./authclients/${this.ACCOUNT_ID}_amo_token.json`
-            fs.writeFileSync(this.AMO_TOKEN_PATH, JSON.stringify(token));
+
+            const account = await mongoDBClient.db(DB_NAME).collection(ACCOUNT_COLLECTION).findOne({account_id: this.ACCOUNT_ID});
+            
+            if(account) {
+
+                const accounts = mongoDBClient.db(DB_NAME).collection(ACCOUNT_COLLECTION);
+                await accounts.updateOne(
+                    {account_id: this.ACCOUNT_ID},
+                    {$set: {
+                        access_token: this.ACCESS_TOKEN,
+                        refresh_token: this.REFRESH_TOKEN,
+                        installed: true,
+                    }}
+                );
+            }
+            else {
+
+                const accountData = {
+
+                    account_id: this.ACCOUNT_ID,
+                    domain: this.SUB_DOMAIN,
+                    access_token: this.ACCESS_TOKEN,
+                    refresh_token: this.REFRESH_TOKEN,
+                    installed: true,
+                }
+    
+                try {
+                    const accounts = mongoDBClient.db(DB_NAME).collection(ACCOUNT_COLLECTION);
+                    await accounts.insertOne(accountData);
+                    
+                } catch (e) {
+                    console.log(e);
+                }
+            }
+
+            await mongoDBClient.close();
+
             return Promise.resolve(token);
         }
     };
@@ -113,10 +156,17 @@ class AuthSync extends Api {
                 this.ACCESS_TOKEN = token.access_token;
                 this.REFRESH_TOKEN = token.refresh_token;
                 this.ACCOUNT_ID = String(jwtDecode(token.access_token).account_id);
-                this.AMO_TOKEN_PATH = `./authclients/${this.ACCOUNT_ID}_amo_token.json`
-                fs.writeFileSync(this.AMO_TOKEN_PATH, JSON.stringify(token));
+            
+                const accounts = mongoDBClient.db(DB_NAME).collection(ACCOUNT_COLLECTION);
+                await accounts.updateOne(
+                    {account_id: this.ACCOUNT_ID},
+                    {$set: {
+                        access_token: this.ACCESS_TOKEN,
+                    }}
+                );
+
                 return token;
-            })
+            }) 
             .catch((err) => {
                 this.logger.error('Token update failed');
                 this.logger.error(err.response.data);
@@ -125,12 +175,23 @@ class AuthSync extends Api {
 
     async deleteToken (){
 
-        fs.unlink(`./authclients/${this.ACCOUNT_ID}_amo_token.json`, err => {
-            if(err) {
-                throw err;
-            }
-            this.logger.debug('Token deleted successfully');
-        });
+        try {
+            await mongoDBClient.connect();
+     
+            const accounts = mongoDBClient.db(DB_NAME).collection(ACCOUNT_COLLECTION);
+            await accounts.updateOne(
+                {account_id: this.ACCOUNT_ID},
+                {$set: {
+                    access_token: "",
+                    refresh_token: "",
+                    installed: false,
+                }}
+            );
+     
+            await mongoDBClient.close();
+        } catch (e) {
+            console.log(e);
+        }
     }
 }
 
