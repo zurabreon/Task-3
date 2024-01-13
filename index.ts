@@ -23,7 +23,7 @@ app.get('/login', async(req: Request<unknown, unknown, unknown, RequestQuery>, r
     const [subDomain] = req.query.referer.split('.');
 
     const api = new AuthSync(subDomain, authCode, '');
-        
+    
     api.getAccessToken();
 
     res.status(200).send({message: "ok"});

@@ -7,16 +7,10 @@ import {
 } from "./logger";
 import log4js from "log4js"
 import { jwtDecode } from "jwt-decode";
-import { MongoClient } from "mongodb";
+import { addAccount, findAccont, updateAccount } from "./services/AccountService";
+
 
 axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
-
-const DB_NAME = 'account-collection';
-const ACCOUNT_COLLECTION = 'accounts';
-
-const db = 'mongodb+srv://zguysanovreon:Qwerty321123@cluster0.usmz3it.mongodb.net/';
-const mongoDBClient = new MongoClient(db);
-
 
 class AuthSync extends Api {
     LIMIT: number;
@@ -80,14 +74,12 @@ class AuthSync extends Api {
 
     async getAccessToken() {
 
-        await mongoDBClient.connect();
-
         if (this.ACCESS_TOKEN) {
             return Promise.resolve(this.ACCESS_TOKEN);
         }
         try {
 
-            const account = String(await mongoDBClient.db(DB_NAME).collection(ACCOUNT_COLLECTION).findOne({account_id: this.ACCOUNT_ID}));
+            const account = await findAccont(this.ACCOUNT_ID);
             const token = JSON.parse(account);
             this.ACCESS_TOKEN = token.access_token;
             this.REFRESH_TOKEN = token.refresh_token;
@@ -101,41 +93,14 @@ class AuthSync extends Api {
             this.REFRESH_TOKEN = token.refresh_token;
             this.ACCOUNT_ID = String(jwtDecode(token.access_token).account_id);
 
-            const account = await mongoDBClient.db(DB_NAME).collection(ACCOUNT_COLLECTION).findOne({account_id: this.ACCOUNT_ID});
+            const account = await findAccont(this.ACCOUNT_ID);
             
             if(account) {
-
-                const accounts = mongoDBClient.db(DB_NAME).collection(ACCOUNT_COLLECTION);
-                await accounts.updateOne(
-                    {account_id: this.ACCOUNT_ID},
-                    {$set: {
-                        access_token: this.ACCESS_TOKEN,
-                        refresh_token: this.REFRESH_TOKEN,
-                        installed: true,
-                    }}
-                );
+                await updateAccount(this.ACCOUNT_ID, this.ACCESS_TOKEN, this.REFRESH_TOKEN, true);
             }
             else {
-
-                const accountData = {
-
-                    account_id: this.ACCOUNT_ID,
-                    domain: this.SUB_DOMAIN,
-                    access_token: this.ACCESS_TOKEN,
-                    refresh_token: this.REFRESH_TOKEN,
-                    installed: true,
-                }
-    
-                try {
-                    const accounts = mongoDBClient.db(DB_NAME).collection(ACCOUNT_COLLECTION);
-                    await accounts.insertOne(accountData);
-                    
-                } catch (e) {
-                    console.log(e);
-                }
+                await addAccount(this.ACCOUNT_ID, this.SUB_DOMAIN, this.ACCESS_TOKEN, this.REFRESH_TOKEN, true);
             }
-
-            await mongoDBClient.close();
 
             return Promise.resolve(token);
         }
@@ -157,13 +122,7 @@ class AuthSync extends Api {
                 this.REFRESH_TOKEN = token.refresh_token;
                 this.ACCOUNT_ID = String(jwtDecode(token.access_token).account_id);
             
-                const accounts = mongoDBClient.db(DB_NAME).collection(ACCOUNT_COLLECTION);
-                await accounts.updateOne(
-                    {account_id: this.ACCOUNT_ID},
-                    {$set: {
-                        access_token: this.ACCESS_TOKEN,
-                    }}
-                );
+                await updateAccount(this.ACCOUNT_ID, this.ACCESS_TOKEN, this.REFRESH_TOKEN, true);
 
                 return token;
             }) 
@@ -175,23 +134,8 @@ class AuthSync extends Api {
 
     async deleteToken (){
 
-        try {
-            await mongoDBClient.connect();
-     
-            const accounts = mongoDBClient.db(DB_NAME).collection(ACCOUNT_COLLECTION);
-            await accounts.updateOne(
-                {account_id: this.ACCOUNT_ID},
-                {$set: {
-                    access_token: "",
-                    refresh_token: "",
-                    installed: false,
-                }}
-            );
-     
-            await mongoDBClient.close();
-        } catch (e) {
-            console.log(e);
-        }
+        await updateAccount(this.ACCOUNT_ID, "", "", false);
+        
     }
 }
 
