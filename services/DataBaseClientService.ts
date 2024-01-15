@@ -1,30 +1,29 @@
 import mongoose from "mongoose";
 
-const db = "mongodb://127.0.0.1:27017";
+class ConnectToMongoDB {
 
-const DB_NAME = 'amo-accounts';
-
-const OPTIONS = {
-    useUnifiedTopology: true,
-    useNewUrlParser: true,
-
-}
-
-const connectDB = async () => {
-    try {
-        await mongoose.connect(`${db}/${DB_NAME}`, OPTIONS);
-        console.log('Connected to Mongo');
-    } catch (error) {
-        console.log(error);
+    private db = "mongodb://localhost:27017";
+    private DB_NAME = 'amo-accounts';
+    
+    private OPTIONS = {
+        useUnifiedTopology: true,
+        useNewUrlParser: true,
     }
+    
+    public connectDB = async (): Promise<typeof mongoose | void> => {
+        try {
+            console.log('Connected to Mongo');
+            return await mongoose.connect(`${this.db}/${this.DB_NAME}`, this.OPTIONS);
+        } catch (error) {
+            console.log(error);
+        }
+    }
+    
+    public disconnectDB = async (): Promise<void> => {
+        console.log('Disconnected'); 
+        return await mongoose.disconnect();
+    }
+
 }
 
-const disconnectDB = async () => {
-    await mongoose.disconnect();
-    console.log('Disconnected'); 
-}
-
-export {
-    connectDB,
-    disconnectDB,
-}
+export default ConnectToMongoDB;

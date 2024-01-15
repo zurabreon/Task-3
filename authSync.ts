@@ -7,7 +7,7 @@ import {
 } from "./logger";
 import log4js from "log4js"
 import { jwtDecode } from "jwt-decode";
-import { addAccount, findAccont, updateAccount } from "./services/AccountService";
+import MongoDBAccountServices from "./services/AccountService";
 
 
 axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
@@ -22,7 +22,10 @@ class AuthSync extends Api {
     CODE: string;
     ACCOUNT_ID: string;
 
-    constructor(subDomain: string, code: string, account_id: string) {
+    constructor(
+        subDomain: string, code: string, account_id: string,
+        private readonly mongoAccountServices: MongoDBAccountServices
+        ) {
         super();
         this.SUB_DOMAIN = subDomain;
         this.ACCOUNT_ID = account_id;
@@ -79,7 +82,7 @@ class AuthSync extends Api {
         }
         try {
 
-            const account = await findAccont(this.ACCOUNT_ID);
+            const account = String(await this.mongoAccountServices.findAccont(this.ACCOUNT_ID));
             const token = JSON.parse(account);
             this.ACCESS_TOKEN = token.access_token;
             this.REFRESH_TOKEN = token.refresh_token;
@@ -93,13 +96,14 @@ class AuthSync extends Api {
             this.REFRESH_TOKEN = token.refresh_token;
             this.ACCOUNT_ID = String(jwtDecode(token.access_token).account_id);
 
-            const account = await findAccont(this.ACCOUNT_ID);
+            const account = await this.mongoAccountServices.findAccont(this.ACCOUNT_ID);
+        
             
-            if(account) {
-                await updateAccount(this.ACCOUNT_ID, this.ACCESS_TOKEN, this.REFRESH_TOKEN, true);
+            if(account !== null) {
+                await this.mongoAccountServices.updateAccount(this.ACCOUNT_ID, this.ACCESS_TOKEN, this.REFRESH_TOKEN, true);
             }
             else {
-                await addAccount(this.ACCOUNT_ID, this.SUB_DOMAIN, this.ACCESS_TOKEN, this.REFRESH_TOKEN, true);
+                await this.mongoAccountServices.addAccount(this.ACCOUNT_ID, this.SUB_DOMAIN, this.ACCESS_TOKEN, this.REFRESH_TOKEN, true);
             }
 
             return Promise.resolve(token);
@@ -122,7 +126,7 @@ class AuthSync extends Api {
                 this.REFRESH_TOKEN = token.refresh_token;
                 this.ACCOUNT_ID = String(jwtDecode(token.access_token).account_id);
             
-                await updateAccount(this.ACCOUNT_ID, this.ACCESS_TOKEN, this.REFRESH_TOKEN, true);
+                await this.mongoAccountServices.updateAccount(this.ACCOUNT_ID, this.ACCESS_TOKEN, this.REFRESH_TOKEN, true);
 
                 return token;
             }) 
@@ -132,9 +136,9 @@ class AuthSync extends Api {
             });
     };
 
-    async deleteToken (){
+    async deleteToken (): Promise<void>{
 
-        await updateAccount(this.ACCOUNT_ID, "", "", false);
+        return await this.mongoAccountServices.updateAccount(this.ACCOUNT_ID, "", "", false);
         
     }
 }
