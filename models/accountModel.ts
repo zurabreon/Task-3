@@ -1,10 +1,11 @@
 import mongoose from "mongoose";
+import Account from "../types/account/accountFields";
 
 const ACCOUNT_COLLECTION = 'accounts';
 
 const Schema = mongoose.Schema;
 
-const accountsSchema = new Schema ({
+const accountsSchema = new Schema<Account> ({
     account_id: {
         type: String,
         required: true,

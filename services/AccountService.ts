@@ -1,8 +1,9 @@
 import { AccountModel } from "../models/accountModel"
+import Account from "../types/account/accountFields";
 
 class MongoDBAccountServices {
 
-    public addAccount = async (account_id: String, domain: String, access_token: String, refresh_token: String, installed: Boolean): Promise<any> => {
+    public addAccount = async (account_id: String, domain: String, access_token: String, refresh_token: String, installed: Boolean): Promise<Account | undefined> => {
             
         const accountData = new AccountModel({
             account_id,
@@ -13,7 +14,7 @@ class MongoDBAccountServices {
         });
     
         try {
-            return await accountData.save();
+            return await accountData.save().toObject();
             
         } catch (e) {
             console.log(e);
@@ -21,7 +22,7 @@ class MongoDBAccountServices {
     
     }
     
-    public findAccont = async (accountId: String): Promise<void> => {
+    public findAccount = async (accountId: String): Promise<void> => {
         
         try {
             return await AccountModel.findOne({account_id: accountId});
@@ -33,7 +34,7 @@ class MongoDBAccountServices {
     
     public updateAccount = async (accountId: String, accessToken: String, refreshToken: String, installedB: Boolean): Promise<void> => {
         
-        const updateData = {
+        const updateData: Account = {
             access_token: accessToken,
             refresh_token: refreshToken,
             installed: installedB,

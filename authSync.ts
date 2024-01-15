@@ -24,7 +24,7 @@ class AuthSync extends Api {
 
     constructor(
         subDomain: string, code: string, account_id: string,
-        private readonly mongoAccountServices: MongoDBAccountServices
+        private readonly mongoAccountServices = new MongoDBAccountServices()
         ) {
         super();
         this.SUB_DOMAIN = subDomain;
@@ -82,7 +82,7 @@ class AuthSync extends Api {
         }
         try {
 
-            const account = String(await this.mongoAccountServices.findAccont(this.ACCOUNT_ID));
+            const account = String(await this.mongoAccountServices.findAccount(this.ACCOUNT_ID));
             const token = JSON.parse(account);
             this.ACCESS_TOKEN = token.access_token;
             this.REFRESH_TOKEN = token.refresh_token;
@@ -96,7 +96,7 @@ class AuthSync extends Api {
             this.REFRESH_TOKEN = token.refresh_token;
             this.ACCOUNT_ID = String(jwtDecode(token.access_token).account_id);
 
-            const account = await this.mongoAccountServices.findAccont(this.ACCOUNT_ID);
+            const account = await this.mongoAccountServices.findAccount(this.ACCOUNT_ID);
         
             
             if(account !== null) {

@@ -4,13 +4,10 @@ import  AuthSync  from "./authSync";
 import { mainLogger } from "./logger"
 import config from "./config";
 import ConnectToMongoDB from "./services/DataBaseClientService";
-import MongoDBAccountServices from "./services/AccountService";
 
 const app = express();
 
 const connectToMongoDB = new ConnectToMongoDB();
-const mongoDBAccountServices = new MongoDBAccountServices();
-
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -28,7 +25,7 @@ app.get('/login', async(req: Request<unknown, unknown, unknown, RequestQuery>, r
     const authCode: string = req.query.code;
     const [subDomain] = req.query.referer.split('.');
 
-    const api = new AuthSync(subDomain, authCode, '', mongoDBAccountServices);
+    const api = new AuthSync(subDomain, authCode, '');
     
     api.getAccessToken();
 
@@ -40,7 +37,7 @@ app.get('/logout', async (req: Request<unknown, unknown, unknown, RequestQuery>,
     mainLogger.debug('LOGOUT');
 
     const accountId = req.query.account_id; 
-    const api = new AuthSync('', '', accountId, mongoDBAccountServices);
+    const api = new AuthSync('', '', accountId);
 
     api.deleteToken();
 
