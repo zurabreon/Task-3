@@ -3,18 +3,19 @@ import Account from "../types/account/accountFields";
 
 class MongoDBAccountServices {
 
-    public addAccount = async (account_id: String, domain: String, access_token: String, refresh_token: String, installed: Boolean): Promise<Account | undefined> => {
+    public addAccount = async (accData: Account): Promise<Account | undefined> => {
             
+
         const accountData = new AccountModel({
-            account_id,
-            domain,
-            access_token,
-            refresh_token,
-            installed,
+            account_id: accData.account_id,
+            domain: accData.domain,
+            access_token: accData.access_token,
+            refresh_token: accData.refresh_token,
+            installed: accData.installed,
         });
     
         try {
-            return await accountData.save().toObject();
+            return await accountData.save();
             
         } catch (e) {
             console.log(e);
@@ -22,33 +23,29 @@ class MongoDBAccountServices {
     
     }
     
-    public findAccount = async (accountId: String): Promise<void> => {
+    public findAccount = async (accountId: string): Promise<Account> => {
+
+        return await AccountModel.findOne({account_id: accountId});
         
-        try {
-            return await AccountModel.findOne({account_id: accountId});
-        } catch (e) {
-            console.log(e);
-        }
-    
     }
     
-    public updateAccount = async (accountId: String, accessToken: String, refreshToken: String, installedB: Boolean): Promise<void> => {
+    public updateAccount = async (accountData: Account): Promise<Account> => {
         
-        const updateData: Account = {
-            access_token: accessToken,
-            refresh_token: refreshToken,
-            installed: installedB,
-        }
-        
-        try {
-            return await AccountModel.findOneAndUpdate(
-                { account_id: accountId }, 
-                updateData, 
-                { useFindAndModify: false });
-        } catch (e) {
-            console.log(e);
-        }
-        
+        const currentAccount = await this.findAccount(accountData.account_id);
+
+        if(currentAccount) {
+
+            return await AccountModel.updateOne(
+                {account_id: accountData.account_id},
+                {$set: {
+                    access_token: accountData.access_token,
+                    refresh_token: accountData.refresh_token,
+                    installed: accountData.installed
+                }},
+                {new: true}
+            );
+
+        } throw new Error(`Account with id '${accountData.account_id}' not found`);  
     }
     
 }

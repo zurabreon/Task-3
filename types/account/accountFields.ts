@@ -1,9 +1,9 @@
 type Account = {
-    account_id?: String,
-    domain?: String,
-    access_token?: String,
-    refresh_token?: String,
-    installed?: Boolean,
+    account_id: string,
+    domain: string,
+    access_token: string,
+    refresh_token: string,
+    installed: boolean,
 }
 
 export default Account;

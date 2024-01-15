@@ -8,6 +8,7 @@ import {
 import log4js from "log4js"
 import { jwtDecode } from "jwt-decode";
 import MongoDBAccountServices from "./services/AccountService";
+import Account from "./types/account/accountFields";
 
 
 axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
@@ -97,13 +98,22 @@ class AuthSync extends Api {
             this.ACCOUNT_ID = String(jwtDecode(token.access_token).account_id);
 
             const account = await this.mongoAccountServices.findAccount(this.ACCOUNT_ID);
-        
+            
+            const accountData: Account = {
+                account_id: this.ACCOUNT_ID,
+                domain: this.SUB_DOMAIN,
+                access_token: this.ACCESS_TOKEN,
+                refresh_token: this.REFRESH_TOKEN,
+                installed: true,
+            }
             
             if(account !== null) {
-                await this.mongoAccountServices.updateAccount(this.ACCOUNT_ID, this.ACCESS_TOKEN, this.REFRESH_TOKEN, true);
+
+                await this.mongoAccountServices.updateAccount(accountData);
             }
             else {
-                await this.mongoAccountServices.addAccount(this.ACCOUNT_ID, this.SUB_DOMAIN, this.ACCESS_TOKEN, this.REFRESH_TOKEN, true);
+
+                await this.mongoAccountServices.addAccount(accountData);
             }
 
             return Promise.resolve(token);
@@ -126,7 +136,15 @@ class AuthSync extends Api {
                 this.REFRESH_TOKEN = token.refresh_token;
                 this.ACCOUNT_ID = String(jwtDecode(token.access_token).account_id);
             
-                await this.mongoAccountServices.updateAccount(this.ACCOUNT_ID, this.ACCESS_TOKEN, this.REFRESH_TOKEN, true);
+                const accountData: Account = {
+                    account_id: this.ACCOUNT_ID,
+                    domain: this.SUB_DOMAIN,
+                    access_token: this.ACCESS_TOKEN,
+                    refresh_token: this.REFRESH_TOKEN,
+                    installed: true,
+                }
+
+                await this.mongoAccountServices.updateAccount(accountData);
 
                 return token;
             }) 
@@ -136,9 +154,17 @@ class AuthSync extends Api {
             });
     };
 
-    async deleteToken (): Promise<void>{
+    async deleteToken (): Promise<Account>{
 
-        return await this.mongoAccountServices.updateAccount(this.ACCOUNT_ID, "", "", false);
+        const accountData: Account = {
+            account_id: this.ACCOUNT_ID,
+            domain: this.SUB_DOMAIN,
+            access_token: "",
+            refresh_token: "",
+            installed: false,
+        }
+
+        return await this.mongoAccountServices.updateAccount(accountData);
         
     }
 }
