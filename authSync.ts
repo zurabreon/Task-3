@@ -1,6 +1,5 @@
 import axios from "axios";
 import config from "./config";
-import fs from "fs";
 import axiosRetry from "axios-retry";
 import Api from "./api/api";
 import {
@@ -8,13 +7,13 @@ import {
 } from "./logger";
 import log4js from "log4js"
 import { jwtDecode } from "jwt-decode";
+import MongoDBAccountServices from "./services/AccountService";
+import Account from "./types/account/accountFields";
 
 
 axiosRetry(axios, { retries: 3, retryDelay: axiosRetry.exponentialDelay });
 
-
 class AuthSync extends Api {
-    AMO_TOKEN_PATH: string;
     LIMIT: number;
     ROOT_PATH: string;
     ACCESS_TOKEN: string;
@@ -24,11 +23,13 @@ class AuthSync extends Api {
     CODE: string;
     ACCOUNT_ID: string;
 
-    constructor(subDomain: string, code: string, account_id: string) {
+    constructor(
+        subDomain: string, code: string, account_id: string,
+        private readonly mongoAccountServices = new MongoDBAccountServices()
+        ) {
         super();
         this.SUB_DOMAIN = subDomain;
         this.ACCOUNT_ID = account_id;
-        this.AMO_TOKEN_PATH = `./authclients/${this.ACCOUNT_ID}_amo_token.json`;
         this.LIMIT = 200;
         this.ROOT_PATH = `https://${this.SUB_DOMAIN}.amocrm.ru`
         this.ACCESS_TOKEN = "";
@@ -76,24 +77,45 @@ class AuthSync extends Api {
     };
 
     async getAccessToken() {
+
         if (this.ACCESS_TOKEN) {
             return Promise.resolve(this.ACCESS_TOKEN);
         }
         try {
-            const content = fs.readFileSync(this.AMO_TOKEN_PATH).toString();
-            const token = JSON.parse(content);
+
+            const account = String(await this.mongoAccountServices.findAccount(this.ACCOUNT_ID));
+            const token = JSON.parse(account);
             this.ACCESS_TOKEN = token.access_token;
             this.REFRESH_TOKEN = token.refresh_token;
             return Promise.resolve(token);
+
         } catch (error) {
-            this.logger.error(`Error read file ${this.AMO_TOKEN_PATH}`, error);
+
             this.logger.debug('Trying get token again');
             const token = await this.requestAccessToken();
             this.ACCESS_TOKEN = token.access_token;
             this.REFRESH_TOKEN = token.refresh_token;
             this.ACCOUNT_ID = String(jwtDecode(token.access_token).account_id);
-            this.AMO_TOKEN_PATH = `./authclients/${this.ACCOUNT_ID}_amo_token.json`
-            fs.writeFileSync(this.AMO_TOKEN_PATH, JSON.stringify(token));
+
+            const account = await this.mongoAccountServices.findAccount(this.ACCOUNT_ID);
+            
+            const accountData: Account = {
+                account_id: this.ACCOUNT_ID,
+                domain: this.SUB_DOMAIN,
+                access_token: this.ACCESS_TOKEN,
+                refresh_token: this.REFRESH_TOKEN,
+                installed: true,
+            }
+            
+            if(account !== null) {
+
+                await this.mongoAccountServices.updateAccount(accountData);
+            }
+            else {
+
+                await this.mongoAccountServices.addAccount(accountData);
+            }
+
             return Promise.resolve(token);
         }
     };
@@ -113,24 +135,37 @@ class AuthSync extends Api {
                 this.ACCESS_TOKEN = token.access_token;
                 this.REFRESH_TOKEN = token.refresh_token;
                 this.ACCOUNT_ID = String(jwtDecode(token.access_token).account_id);
-                this.AMO_TOKEN_PATH = `./authclients/${this.ACCOUNT_ID}_amo_token.json`
-                fs.writeFileSync(this.AMO_TOKEN_PATH, JSON.stringify(token));
+            
+                const accountData: Account = {
+                    account_id: this.ACCOUNT_ID,
+                    domain: this.SUB_DOMAIN,
+                    access_token: this.ACCESS_TOKEN,
+                    refresh_token: this.REFRESH_TOKEN,
+                    installed: true,
+                }
+
+                await this.mongoAccountServices.updateAccount(accountData);
+
                 return token;
-            })
+            }) 
             .catch((err) => {
                 this.logger.error('Token update failed');
                 this.logger.error(err.response.data);
             });
     };
 
-    async deleteToken (){
+    async deleteToken (): Promise<Account>{
 
-        fs.unlink(`./authclients/${this.ACCOUNT_ID}_amo_token.json`, err => {
-            if(err) {
-                throw err;
-            }
-            this.logger.debug('Token deleted successfully');
-        });
+        const accountData: Account = {
+            account_id: this.ACCOUNT_ID,
+            domain: this.SUB_DOMAIN,
+            access_token: "",
+            refresh_token: "",
+            installed: false,
+        }
+
+        return await this.mongoAccountServices.updateAccount(accountData);
+        
     }
 }
 
