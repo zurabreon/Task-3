@@ -1,5 +1,5 @@
 import { AccountModel } from "../models/accountModel"
-import { connectDB, disconnectDB } from "../DataBaseClientService";
+import { connectDB, disconnectDB } from "./DataBaseClientService";
 
 const addAccount = async (account_id: String, domain: String, access_token: String, refresh_token: String, installed: Boolean) => {
 
